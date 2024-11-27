@@ -47,6 +47,20 @@
             font-size: 12px;
             fill: #333;
         }
+        .spinner {
+            display: none;
+            margin: 10px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -56,6 +70,7 @@
             <label for="queryInput">Enter your query:</label><br>
             <input type="text" id="queryInput" placeholder="e.g., Show all integrations for Library" style="width: 100%; padding: 10px;">
             <button onclick="submitQuery()">Submit</button>
+            <div class="spinner" id="spinner"></div>
         </div>
         <div class="panel">
             <h2>Response</h2>
@@ -68,21 +83,32 @@
     </div>
 
     <script>
-        // GraphQL API endpoint
         const GRAPHQL_URL = "http://localhost:5000/graphql";
 
         // Function to handle query submission
         async function submitQuery() {
-            const query = document.getElementById("queryInput").value;
+            const queryInput = document.getElementById("queryInput").value;
             const responseOutput = document.getElementById("responseOutput");
             const graphContainer = document.getElementById("graph");
+            const spinner = document.getElementById("spinner");
+
+            // Show spinner and clear outputs
+            spinner.style.display = "block";
+            responseOutput.innerText = "Waiting for response...";
+            graphContainer.innerHTML = "";
 
             try {
+                // Map natural language to GraphQL query
+                const mappedQuery = mapToGraphQL(queryInput);
+                if (!mappedQuery) {
+                    throw new Error("Unable to map the input query to GraphQL.");
+                }
+
                 // Fetch GraphQL data
-                const response = await fetch("http://localhost:5000/graphql", {
+                const response = await fetch(GRAPHQL_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ query }),
+                    body: JSON.stringify({ query: mappedQuery }),
                 });
 
                 if (!response.ok) {
@@ -99,17 +125,15 @@
                 }
 
                 responseOutput.innerText = `Data fetched successfully. ${edges.length} edges found.`;
-
-                // Visualize graph
                 visualizeGraph({ edges });
             } catch (error) {
                 console.error("Error fetching GraphQL data:", error);
-                responseOutput.innerText = `Error fetching GraphQL data: ${error.message}`;
-                graphContainer.innerHTML = ""; // Clear previous graph
+                responseOutput.innerText = `Error: ${error.message}`;
+            } finally {
+                // Hide spinner
+                spinner.style.display = "none";
             }
         }
-
-
 
         // Map natural language query to GraphQL query
         function mapToGraphQL(input) {
@@ -124,19 +148,11 @@
                     }
                 }`;
             }
-            return `query { edges { consumer producer integrationType context } }`;
+            return null; // Return null for unhandled inputs
         }
 
-        // Visualize the graph using D3.js
+        // Visualization logic remains unchanged
         function visualizeGraph(data) {
-            // Validate data
-            if (!data.edges || data.edges.length === 0) {
-                document.getElementById("responseOutput").innerText = "No edges available for visualization.";
-                console.warn("No edges data found.");
-                return;
-            }
-
-            // Extract nodes and links from edges
             const nodes = {};
             const links = data.edges.map(edge => {
                 nodes[edge.consumer] = { id: edge.consumer };
@@ -149,22 +165,18 @@
                 };
             });
 
-            // Convert nodes object to an array
             const nodeArray = Object.values(nodes);
 
-            // Set up the SVG area
             const svg = d3.select("#graph");
-            svg.selectAll("*").remove(); // Clear any existing graph
+            svg.selectAll("*").remove();
             const width = svg.node().getBoundingClientRect().width;
             const height = svg.node().getBoundingClientRect().height;
 
-            // Set up force simulation
             const simulation = d3.forceSimulation(nodeArray)
                 .force("link", d3.forceLink(links).id(d => d.id).distance(100))
                 .force("charge", d3.forceManyBody().strength(-200))
                 .force("center", d3.forceCenter(width / 2, height / 2));
 
-            // Draw links
             const link = svg.append("g")
                 .attr("class", "links")
                 .selectAll("line")
@@ -174,7 +186,6 @@
                 .attr("stroke-width", 1.5)
                 .attr("stroke", "#999");
 
-            // Draw nodes
             const node = svg.append("g")
                 .attr("class", "nodes")
                 .selectAll("circle")
@@ -188,7 +199,6 @@
                     .on("drag", dragged)
                     .on("end", dragended));
 
-            // Add labels to nodes
             const labels = svg.append("g")
                 .attr("class", "labels")
                 .selectAll("text")
@@ -199,7 +209,6 @@
                 .attr("fill", "#333")
                 .text(d => d.id);
 
-            // Update positions on tick
             simulation.on("tick", () => {
                 link
                     .attr("x1", d => d.source.x)
@@ -216,7 +225,6 @@
                     .attr("y", d => d.y + 5);
             });
 
-            // Dragging event handlers
             function dragstarted(event, d) {
                 if (!event.active) simulation.alphaTarget(0.3).restart();
                 d.fx = d.x;
@@ -234,6 +242,6 @@
                 d.fy = null;
             }
         }
-</script>
+    </script>
 </body>
 </html>

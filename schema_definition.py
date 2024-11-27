@@ -2,7 +2,12 @@ import graphene
 import pandas as pd
 
 # Load dataset globally (update path as necessary)
-df = pd.read_csv("sample_integration_data.csv")  # Ensure this file exists in your working directory
+try:
+    df = pd.read_csv("sample_integration_data.csv")  # Ensure this file exists in your working directory
+    print("Dataset loaded successfully!")
+except FileNotFoundError:
+    print("Error: 'sample_integration_data.csv' not found. Please place the file in the working directory.")
+    df = pd.DataFrame()  # Empty DataFrame as fallback
 
 class Node(graphene.ObjectType):
     name = graphene.String()
@@ -87,5 +92,13 @@ class Query(graphene.ObjectType):
 # Create the schema
 schema = graphene.Schema(query=Query)
 
-# Confirm schema creation
-print("Schema created successfully!")
+# Confirm schema creation and inspect schema
+try:
+    print("Schema created successfully!")
+    print("Query type fields:", list(schema.query._meta.fields.keys()))
+except AttributeError as e:
+    print("Error accessing schema attributes:", e)
+
+# Debug the entire schema structure
+print("\nDebugging schema:")
+print(schema)
