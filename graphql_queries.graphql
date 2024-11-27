@@ -1,0 +1,66 @@
+# Query 1: Fetch All Nodes
+query FetchAllNodes {
+    nodes {
+        name
+    }
+}
+
+# Query 2: Fetch All Edges
+query FetchAllEdges {
+    edges {
+        consumer
+        producer
+        integrationType
+        context
+    }
+}
+
+# Query 3: Filter Edges by Context
+query FilterEdgesByContext {
+    edges(contextContains: "Library") {
+        consumer
+        producer
+        integrationType
+        context
+    }
+}
+
+# Query 4: Filter Edges by Integration Type
+query FilterEdgesByIntegrationType {
+    edges(integrationType: "ETL") {
+        consumer
+        producer
+        integrationType
+        context
+    }
+}
+
+# Query 5: Filter Edges by Multiple Integration Types
+query FilterEdgesByMultipleTypes {
+    edges(integrationTypeIn: ["ETL", "Kafka-Stream"]) {
+        consumer
+        producer
+        integrationType
+        context
+    }
+}
+
+# Query 6: Paginate Edges
+query PaginateEdgesFirst {
+    edges(first: 3) {
+        consumer
+        producer
+        integrationType
+        context
+    }
+}
+
+# Query 7: Combine Filters
+query CombineFilters {
+    edges(consumer: "Student Portal", contextContains: "Library") {
+        consumer
+        producer
+        integrationType
+        context
+    }
+}

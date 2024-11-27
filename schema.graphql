@@ -1,0 +1,16 @@
+
+type Node {
+  name: String!
+}
+
+type Edge {
+  consumer: String!
+  producer: String!
+  integrationType: String!
+  context: String!
+}
+
+type Query {
+  nodes: [Node!]!
+  edges(consumer: String, producer: String, integrationType: String, context: String): [Edge!]!
+}
